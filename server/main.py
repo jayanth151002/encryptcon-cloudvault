@@ -2,6 +2,11 @@ import boto3
 from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
+from auth import Auth
+
+from models.create_user import CreateUser
+from models.login_user import LoginUser
+from models.verify_2fa import Verify2Fa
 
 load_dotenv()
 
@@ -21,36 +26,41 @@ def default():
     return {"server_active": True}
 
 
-@app.get("/user/")
-def get_user(name: str):
+@app.post("/user/create")
+def create_user(create_user: CreateUser):
     try:
-        key = {"username": {"S": name}}
-        response = dynamodb.get_item(
-            TableName=user_table,
-            Key=key,
-        )
-        item = response.get("Item", None)
-        if item:
-            return {"user": item, "method": "GET"}
-        else:
-            return {"error": "User not found"}
+        auth = Auth()
+        response = auth.create_user(create_user.username, create_user.user_type)
+        return response
     except Exception as e:
         return {"error": e}
 
 
-@app.post("/user/")
-def post_user(name: str):
-    print("user table: ", user_table)
+@app.post("/user/verify-password")
+def verify_password(login_user: LoginUser):
     try:
-        item = {"username": {"S": name}}
-        response = dynamodb.put_item(
-            TableName=user_table,
-            Item=item,
-        )
-        print(response)
-        if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-            return {"user": item, "method": "POST"}
-        else:
-            return {"error": "Failed to add user"}
+        auth = Auth()
+        response = auth.verify_password(login_user.username, login_user.password)
+        return response
+    except Exception as e:
+        return {"error": e}
+
+
+@app.get("/user/qr")
+def get_qr(id: str):
+    try:
+        auth = Auth()
+        response = auth.generate_qrcode(id)
+        return response
+    except Exception as e:
+        return {"error": e}
+
+
+@app.post("/user/verify-2fa")
+def verify_2fa(verify_2fa: Verify2Fa):
+    try:
+        auth = Auth()
+        response = auth.verify_2fa(verify_2fa.id, verify_2fa.code, verify_2fa.password)
+        return response
     except Exception as e:
         return {"error": e}
