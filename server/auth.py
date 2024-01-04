@@ -49,6 +49,7 @@ class Auth:
                     "password": {"S": encoded_password},
                     "salt": {"B": salt},
                     "user_type": {"S": user_type},
+                    "qr_scanned": {"BOOL": False},
                 }
                 dynamodb.put_item(TableName=user_table, Item=item)
                 return {
@@ -72,7 +73,11 @@ class Auth:
                 if self.password_manager.verify_password(
                     password, stored_password["S"], salt["B"]
                 ):
-                    return {"success": True, "user_id": item["id"]["S"]}
+                    return {
+                        "success": True,
+                        "user_id": item["id"]["S"],
+                        "qr_scanned": item["qr_scanned"]["BOOL"],
+                    }
                 else:
                     return {"success": False, "error": "Invalid password"}
             else:
@@ -89,6 +94,11 @@ class Auth:
                     Key=key,
                 )
                 user = response.get("Item", None)
+                if user:
+                    if user["qr_scanned"]["BOOL"]:
+                        return {"success": False, "error": "QR code already scanned"}
+                else:
+                    return {"success": False, "error": "User not found"}
             except Exception as e:
                 return {"success": False, "error": "User not found"}
             uri = pyotp.totp.TOTP(self.key).provisioning_uri(
@@ -102,6 +112,15 @@ class Auth:
             buffered = BytesIO()
             img.save(buffered)
             qr_byte = b64encode(buffered.getvalue()).decode("utf-8")
+
+            dynamodb.update_item(
+                TableName=user_table,
+                Key={"id": {"S": user_id}},
+                UpdateExpression="SET qr_scanned = :q",
+                ExpressionAttributeValues={
+                    ":q": {"BOOL": True},
+                },
+            )
             return {"success": True, "qr": qr_byte}
         except Exception as e:
             return {"success": False, "error": str(e)}
