@@ -34,20 +34,17 @@ def simulate_database_entry(data):
 async def continuous_send():
     global is_sending_enabled
     while is_sending_enabled:
-        await asyncio.sleep(120)
+        await asyncio.sleep(60)
         random_entry = get_random_entry()
         simulate_database_entry(random_entry)
 
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(continuous_send())
-
-
 @app.post("/send-to-database")
 async def trigger_send_to_database():
-    random_entry = get_random_entry()
-    return simulate_database_entry(random_entry)
+    global is_sending_enabled
+    is_sending_enabled = True
+    asyncio.create_task(continuous_send())
+    return {"message": "Continuous sending started"}
 
 
 @app.post("/pause")
