@@ -6,17 +6,35 @@ import os
 from auth import Auth
 from transaction_service import TransactionService
 from typing import Optional
+import pandas as pd
 
 from models.create_user import CreateUser
 from models.login_user import LoginUser
 from models.verify_2fa import Verify2Fa
 from models.transaction import Transaction
+from models.credit_approver import CreditApprover
+from models.loan_approver import LoanApprover
 
 from predictor.test import Test
+
+from approver.credit_main import CreditDataset
 
 load_dotenv()
 
 predictor = Test()
+
+credit_approver = CreditDataset(
+    pd.read_csv("approver\\data\\credit_data.csv"), "Card_Issued"
+)
+
+loan_approver = LoanApprover(
+    pd.read_csv("approver\\data\\loan_data.csv"),
+    "Loan_Status",
+    "Loan_Amount",
+    "Loan_Amount_Term",
+    "Loan_Interest",
+    embed_size=32,
+)
 
 dynamodb = boto3.client(
     "dynamodb",
@@ -105,5 +123,25 @@ def predict_transaction(authorization: Optional[str] = Header(None)):
             response = transaction_service.get_transactions(100)
             return response
 
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/credit-approver")
+def credit_approver_fn(credit_data: CreditApprover):
+    try:
+        credit_approver_dict = credit_data.__dict__
+        res = credit_approver.predict(credit_approver_dict)
+        return {"success": True, "result": res}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/loan-approver")
+def loan_approver_fn(loan_data: CreditApprover):
+    try:
+        loan_approver_dict = loan_data.__dict__
+        res = loan_approver.predict(loan_approver_dict)
+        return {"success": True, "result": res}
     except Exception as e:
         return {"error": str(e)}

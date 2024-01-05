@@ -36,8 +36,8 @@ class Auth:
                 FilterExpression="username = :val",
                 ExpressionAttributeValues={":val": {"S": username}},
             )
-            item = response.get("Items", [])[0]
-            if item:
+            item = response.get("Items", [])
+            if not len(item) == 0:
                 return {"success": False, "error": "User already exists"}
             else:
                 new_password = self.password_manager.generate_password()
