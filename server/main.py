@@ -1,5 +1,6 @@
 import boto3
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 from auth import Auth
@@ -18,6 +19,14 @@ dynamodb = boto3.client(
     region_name=os.getenv("AWS_REGION"),
 )
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 user_table = os.getenv("AWS_USER_TABLE")
 ml_model_api = os.getenv("ML_MODEL_API")
