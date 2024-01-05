@@ -163,12 +163,10 @@ class LoanDataset(nn.Module):
                     )
                     .toarray()[0]
                 )
-                print(col, end="\n\n\n\n\n")
             elif X[col].dtype == "int64" or X[col].dtype == "float64":
                 X[col] = self.feat_encoder[col]["MinMax"].transform(
                     X[col].values.reshape(-1, 1)
                 )
-                print(col, end="\n\n\n\n\n")
             else:
                 raise Exception("Unknown column type: {}".format(col))
 

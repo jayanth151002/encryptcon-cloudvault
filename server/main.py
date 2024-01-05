@@ -25,11 +25,11 @@ load_dotenv()
 predictor = Test()
 
 credit_approver = CreditDataset(
-    pd.read_csv("approver\\data\\credit_data.csv")[:100], "Card_Issued"
+    pd.read_csv("approver\\data\\credit_data.csv"), "Card_Issued"
 )
 
 loan_approver = LoanDataset(
-    pd.read_csv("approver\\data\\loan_data.csv")[:100],
+    pd.read_csv("approver\\data\\loan_data.csv"),
     "Loan_Status",
     "Loan_Amount",
     "Loan_Amount_Term",
