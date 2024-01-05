@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
 from auth import Auth
+import requests
 
 from models.create_user import CreateUser
 from models.login_user import LoginUser
@@ -19,6 +20,7 @@ dynamodb = boto3.client(
 app = FastAPI()
 
 user_table = os.getenv("AWS_USER_TABLE")
+ml_model_api = os.getenv("ML_MODEL_API")
 
 
 @app.get("/")
@@ -62,5 +64,24 @@ def verify_2fa(verify_2fa: Verify2Fa):
         auth = Auth()
         response = auth.verify_2fa(verify_2fa.id, verify_2fa.code, verify_2fa.password)
         return response
+    except Exception as e:
+        return {"error": e}
+
+
+@app.post("/predict")
+def create_prediction(id: str, token: str):
+    try:
+        # auth = Auth()
+        # response = auth.verify_token(id, token)
+        # if response["status"] == "success":
+        response = requests.post(
+            ml_model_api,
+            json={
+                "id": id,
+            },
+        )
+        return response.json()
+    # else:
+    #     return response
     except Exception as e:
         return {"error": e}
