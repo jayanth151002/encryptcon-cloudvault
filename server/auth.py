@@ -7,6 +7,7 @@ from base64 import b64encode
 import jwt
 import boto3
 import uuid
+
 from datetime import datetime, timedelta
 from password import PasswordManager
 
@@ -164,7 +165,19 @@ class Auth:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-
-if __name__ == "__main__":
-    auth = Auth()
-    auth.generate_qrcode()
+    def verify_token(self, token):
+        try:
+            payload = jwt.decode(token, jwt_secret, algorithms=["HS256"])
+            user_id = payload["id"]
+            response = dynamodb.scan(
+                TableName=user_table,
+                FilterExpression="id = :val",
+                ExpressionAttributeValues={":val": {"S": user_id}},
+            )
+            item = response.get("Items", [])[0]
+            if item:
+                return {"success": True, "user_id": payload["id"]}
+            else:
+                raise Exception("User not found")
+        except Exception as e:
+            return {"success": False, "error": str(e)}

@@ -1,11 +1,11 @@
 import boto3
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 from auth import Auth
 from transaction_service import TransactionService
-import requests
+from typing import Optional
 
 from models.create_user import CreateUser
 from models.login_user import LoginUser
@@ -89,5 +89,21 @@ def predict_transaction(transaction: Transaction):
         transaction_service = TransactionService()
         response = transaction_service.add_entry(transaction, prediction)
         return response
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/transactions")
+def predict_transaction(authorization: Optional[str] = Header(None)):
+    try:
+        if not authorization:
+            raise Exception("No authorization header found")
+        token = authorization.split("Bearer ")[1]
+        verification_response = Auth().verify_token(token)
+        if verification_response["success"]:
+            transaction_service = TransactionService()
+            response = transaction_service.get_transactions(100)
+            return response
+
     except Exception as e:
         return {"error": str(e)}

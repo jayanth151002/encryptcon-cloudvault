@@ -45,3 +45,27 @@ class TransactionService:
             return {"success": True}
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+    def get_transactions(self, limit: int):
+        try:
+            response = dynamodb.scan(
+                TableName=transaction_table,
+                Limit=limit,
+            )
+            transactions = []
+            for item in response["Items"]:
+                transactions.append(
+                    {
+                        "id": item["id"]["S"],
+                        "source": item["Source"]["S"],
+                        "target": item["Target"]["S"],
+                        "location": item["Location"]["S"],
+                        "type": item["Type"]["S"],
+                        "amount": item["Amount"]["N"],
+                        "fraudulent": item["Fraudulent"]["BOOL"],
+                        "timestamp": item["timestamp"]["S"],
+                    }
+                )
+            return {"success": True, "data": transactions}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
