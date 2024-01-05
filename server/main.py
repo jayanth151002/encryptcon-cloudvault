@@ -4,13 +4,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 from auth import Auth
+from transaction_service import TransactionService
 import requests
 
 from models.create_user import CreateUser
 from models.login_user import LoginUser
 from models.verify_2fa import Verify2Fa
+from models.transaction import Transaction
+
+from predictor.test import Test
 
 load_dotenv()
+
+predictor = Test()
 
 dynamodb = boto3.client(
     "dynamodb",
@@ -74,3 +80,14 @@ def verify_2fa(verify_2fa: Verify2Fa):
         return response
     except Exception as e:
         return {"error": e}
+
+
+@app.post("/transaction/predict")
+def predict_transaction(transaction: Transaction):
+    try:
+        prediction = predictor.query(transaction.__dict__)
+        transaction_service = TransactionService()
+        response = transaction_service.add_entry(transaction, prediction)
+        return response
+    except Exception as e:
+        return {"error": str(e)}

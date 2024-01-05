@@ -35,7 +35,7 @@ class Auth:
                 FilterExpression="username = :val",
                 ExpressionAttributeValues={":val": {"S": username}},
             )
-            item = response.get("Item", None)
+            item = response.get("Items", [])[0]
             if item:
                 return {"success": False, "error": "User already exists"}
             else:
