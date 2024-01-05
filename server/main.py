@@ -18,17 +18,18 @@ from models.loan_approver import LoanApprover
 from predictor.test import Test
 
 from approver.credit_main import CreditDataset
+from approver.loan_main import LoanDataset
 
 load_dotenv()
 
 predictor = Test()
 
 credit_approver = CreditDataset(
-    pd.read_csv("approver\\data\\credit_data.csv"), "Card_Issued"
+    pd.read_csv("approver\\data\\credit_data.csv")[:100], "Card_Issued"
 )
 
-loan_approver = LoanApprover(
-    pd.read_csv("approver\\data\\loan_data.csv"),
+loan_approver = LoanDataset(
+    pd.read_csv("approver\\data\\loan_data.csv")[:100],
     "Loan_Status",
     "Loan_Amount",
     "Loan_Amount_Term",
@@ -138,10 +139,16 @@ def credit_approver_fn(credit_data: CreditApprover):
 
 
 @app.post("/loan-approver")
-def loan_approver_fn(loan_data: CreditApprover):
+def loan_approver_fn(loan_data: LoanApprover):
     try:
         loan_approver_dict = loan_data.__dict__
         res = loan_approver.predict(loan_approver_dict)
-        return {"success": True, "result": res}
+        return {
+            "success": True,
+            "reject_loan": res[0],
+            "loan_amount": res[1] * 5 + 5,
+            "duration": res[2],
+            "interest": res[3],
+        }
     except Exception as e:
         return {"error": str(e)}

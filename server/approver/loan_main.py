@@ -149,20 +149,13 @@ class LoanDataset(nn.Module):
             nn.ReLU(),
         )
 
-        self.fit(epochs=100)
+        self.fit(epochs=25)
 
     def encode(self, df):
         X = df.copy()
+
         for col in X.columns:
-            if col == self.label_column:
-                y1 = X[col]
-            elif col == self.amount_column:
-                y2 = X[col]
-            elif col == self.period_column:
-                y3 = X[col]
-            elif col == self.interest_column:
-                y4 = X[col]
-            elif X[col].dtype == "object":
+            if X[col].dtype == "object":
                 X[col] = X[col].swifter.apply(
                     lambda x: self.feat_encoder[col]["OneHot"]
                     .transform(
@@ -170,29 +163,16 @@ class LoanDataset(nn.Module):
                     )
                     .toarray()[0]
                 )
+                print(col, end="\n\n\n\n\n")
             elif X[col].dtype == "int64" or X[col].dtype == "float64":
                 X[col] = self.feat_encoder[col]["MinMax"].transform(
                     X[col].values.reshape(-1, 1)
                 )
+                print(col, end="\n\n\n\n\n")
             else:
                 raise Exception("Unknown column type: {}".format(col))
 
-        X = X.drop(
-            [
-                self.label_column,
-                self.amount_column,
-                self.period_column,
-                self.interest_column,
-            ],
-            axis=1,
-        )
-        y1 = y1.swifter.apply(lambda x: 1 if x == "Y" else 0)
-        y2 = y2.swifter.apply(
-            lambda x: 0 if x < y2.max() // 3 else 1 if x < 2 * y2.max() // 3 else 2
-        )
-        y3 = self.label_encoder["y3"].transform(y3)
-        y4 = self.label_encoder["y4"].transform(y4)
-        return X, y1, y2, y3, y4
+        return X
 
     def forward(self, X):
         x = torch.empty((X.shape[0], 0, self.embed_size))
@@ -285,21 +265,37 @@ class LoanDataset(nn.Module):
                 )
             )
 
-    def predict(self, df):
-        X, _, _, _, _ = self.encode(df)
+    def predict(self, dinput):
+        df = pd.DataFrame([dinput])
+        print(df, end="Jayanth is a noob \n\n\n\n\n")
+        X = self.encode(df)
+        print(X)
         self.eval()
         with torch.no_grad():
             o1, o2, o3, o4 = self.forward(X)
             y1_pred = np.argmax(o1.cpu().numpy(), axis=1)
+            print(1, end="\n\n\n\n")
             y2_pred = np.argmax(o2.cpu().numpy(), axis=1)
+            print(2, end="\n\n\n\n")
             y3_pred = np.argmax(o3.cpu().numpy(), axis=1)
+            print(3, end="\n\n\n\n")
             y4_pred = np.argmax(o4.cpu().numpy(), axis=1)
+            print(4, end="\n\n\n\n")
+
+        print(
+            "Predicted: {}, {}, {}, {}".format(
+                y1_pred.item(),
+                y2_pred.item(),
+                y3_pred.item(),
+                y4_pred.item(),
+            )
+        )
 
         return (
-            y1_pred,
-            y2_pred,
-            self.label_encoder["y3"].inverse_transform(y3_pred),
-            self.label_encoder["y4"].inverse_transform(y4_pred),
+            y1_pred.item(),
+            y2_pred.item(),
+            self.label_encoder["y3"].inverse_transform(y3_pred).item(),
+            self.label_encoder["y4"].inverse_transform(y4_pred).item(),
         )
 
     def __get_item__(self, idx):

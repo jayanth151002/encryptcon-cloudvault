@@ -103,7 +103,7 @@ class CreditDataset(nn.Module):
             nn.ReLU(),
         )
 
-        self.fit(epochs=100)
+        self.fit(epochs=25)
 
     def encode(self, df):
         X = df.copy()
@@ -187,14 +187,14 @@ class CreditDataset(nn.Module):
                 "Test Accuracy: {}".format(accuracy_score(y_test.cpu().numpy(), y_pred))
             )
 
-    def predict(self, input):
-        df = pd.DataFrame([input])
+    def predict(self, dinput):
+        df = pd.DataFrame([dinput])
         X, y = self.encode(df)
         self.eval()
         with torch.no_grad():
             output = self.forward(X)
             y_pred = np.argmax(output.cpu().numpy(), axis=1)
-        return y_pred
+        return y_pred.item()
 
     def __get_item__(self, idx):
         return self.X[idx], self.y[idx]

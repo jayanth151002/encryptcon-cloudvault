@@ -19,3 +19,4 @@ class CreditApprover(BaseModel):
     FLAG_EMAIL: int
     OCCUPATION_TYPE: str
     CNT_FAM_MEMBERS: int
+    Card_Issued: int
